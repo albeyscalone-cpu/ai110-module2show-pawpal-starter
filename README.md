@@ -48,11 +48,22 @@ Run the CLI demo with `python main.py` to see the classes work together:
 
 ```text
 $ python main.py
-Today's Schedule for Jordan
------------------------------
+Today's Schedule for Jordan (Sorted by Time)
+----------------------------------------------
 08:00 - Mochi: Morning walk (30 min) [priority: high]
-09:00 - Luna: Breakfast (10 min) [priority: high]
-18:00 - Luna: Evening medicine (5 min) [priority: high]
+08:00 - Luna: Breakfast (10 min) [priority: high]
+12:00 - Luna: Medicine (5 min) [priority: high]
+18:00 - Mochi: Dinner (10 min) [priority: high]
+
+Incomplete Tasks for Mochi
+- 08:00 Morning walk
+- 18:00 Dinner
+
+Conflict Warnings
+- Conflict: Morning walk and Breakfast are both scheduled for 2026-06-21 at 08:00.
+
+Recurring Task
+- Completed Morning walk; next occurrence: 2026-06-22
 ```
 
 ## 🧪 Testing PawPal+
@@ -73,14 +84,12 @@ Sample test output:
 
 ## 📐 Smarter Scheduling
 
-> Fill in once you've implemented scheduling logic.
-
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+| Task sorting | `Scheduler.sort_by_time()` | Orders zero-padded `HH:MM` task times chronologically. |
+| Filtering | `Scheduler.filter_tasks()` | Selects tasks by pet name, completion status, or both. |
+| Conflict handling | `Scheduler.detect_conflicts()` | Returns warnings for incomplete tasks in the same date and time slot. |
+| Recurring tasks | `Scheduler.mark_task_complete()` | Adds the next occurrence one day or seven days after a daily or weekly task. |
 
 ## 📸 Demo Walkthrough
 

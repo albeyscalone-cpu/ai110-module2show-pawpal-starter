@@ -1,7 +1,7 @@
 """Core class skeletons for the PawPal+ pet care system."""
 
-from dataclasses import dataclass, field
-from datetime import date
+from dataclasses import dataclass, field, replace
+from datetime import date, timedelta
 
 
 @dataclass
@@ -67,7 +67,7 @@ class Scheduler:
 
     def sort_by_time(self, tasks: list[Task]) -> list[Task]:
         """Return tasks ordered by scheduled time."""
-        raise NotImplementedError
+        return sorted(tasks, key=lambda task: task.time)
 
     def filter_tasks(
         self,
@@ -75,8 +75,58 @@ class Scheduler:
         completed: bool | None = None,
     ) -> list[Task]:
         """Filter tasks by optional pet name and completion status."""
-        raise NotImplementedError
+        pets = self.owner.pets
+        if pet_name is not None:
+            pets = [pet for pet in pets if pet.name.lower() == pet_name.lower()]
+
+        tasks = [task for pet in pets for task in pet.tasks]
+        if completed is not None:
+            tasks = [task for task in tasks if task.completed is completed]
+        return tasks
 
     def detect_conflicts(self, tasks: list[Task]) -> list[str]:
         """Return warnings for tasks scheduled at the same time."""
-        raise NotImplementedError
+        occupied_slots: dict[tuple[date | None, str], Task] = {}
+        warnings = []
+
+        for task in self.sort_by_time(tasks):
+            if task.completed:
+                continue
+
+            slot = (task.due_date, task.time)
+            if slot in occupied_slots:
+                first_task = occupied_slots[slot]
+                date_label = task.due_date.isoformat() if task.due_date else "the same day"
+                warnings.append(
+                    f"Conflict: {first_task.title} and {task.title} are both "
+                    f"scheduled for {date_label} at {task.time}."
+                )
+            else:
+                occupied_slots[slot] = task
+
+        return warnings
+
+    def mark_task_complete(self, pet_name: str, task: Task) -> Task | None:
+        """Complete a task and add its next daily or weekly occurrence."""
+        pet = next(
+            (pet for pet in self.owner.pets if pet.name.lower() == pet_name.lower()),
+            None,
+        )
+        if pet is None or not any(saved_task is task for saved_task in pet.tasks):
+            raise ValueError("Task does not belong to the selected pet.")
+
+        if task.completed:
+            return None
+
+        task.mark_complete()
+        repeat_days = {"daily": 1, "weekly": 7}.get(task.frequency.lower())
+        if repeat_days is None:
+            return None
+
+        next_task = replace(
+            task,
+            completed=False,
+            due_date=(task.due_date or date.today()) + timedelta(days=repeat_days),
+        )
+        pet.add_task(next_task)
+        return next_task

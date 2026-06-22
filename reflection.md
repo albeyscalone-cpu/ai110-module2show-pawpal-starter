@@ -30,8 +30,11 @@ the owner's pets instead.
 
 **b. Tradeoffs**
 
-- Describe one tradeoff your scheduler makes.
-- Why is that tradeoff reasonable for this scenario?
+My conflict detector only flags tasks with the exact same date and start time; it
+does not calculate whether their durations overlap. This keeps the warning logic
+easy to understand and avoids pretending the app knows travel or transition
+time between different pet activities. Exact matches catch the clearest
+scheduling mistake, while interval overlap could be added in a later version.
 
 ---
 
