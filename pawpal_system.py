@@ -18,7 +18,7 @@ class Task:
 
     def mark_complete(self) -> None:
         """Mark this task complete."""
-        raise NotImplementedError
+        self.completed = True
 
 
 @dataclass
@@ -31,11 +31,11 @@ class Pet:
 
     def add_task(self, task: Task) -> None:
         """Add a care task for this pet."""
-        raise NotImplementedError
+        self.tasks.append(task)
 
     def task_count(self) -> int:
         """Return the number of tasks assigned to this pet."""
-        raise NotImplementedError
+        return len(self.tasks)
 
 
 @dataclass
@@ -48,11 +48,11 @@ class Owner:
 
     def add_pet(self, pet: Pet) -> None:
         """Add a pet to this owner."""
-        raise NotImplementedError
+        self.pets.append(pet)
 
     def get_all_tasks(self) -> list[Task]:
         """Return tasks belonging to all of the owner's pets."""
-        raise NotImplementedError
+        return [task for pet in self.pets for task in pet.tasks]
 
 
 @dataclass
@@ -63,7 +63,7 @@ class Scheduler:
 
     def get_tasks(self) -> list[Task]:
         """Retrieve the current tasks from the owner's pets."""
-        raise NotImplementedError
+        return self.owner.get_all_tasks()
 
     def sort_by_time(self, tasks: list[Task]) -> list[Task]:
         """Return tasks ordered by scheduled time."""
