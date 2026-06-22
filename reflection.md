@@ -4,13 +4,20 @@
 
 **a. Initial design**
 
-- Briefly describe your initial UML design.
-- What classes did you include, and what responsibilities did you assign to each?
+The three core actions I identified are adding a pet to an owner's account,
+scheduling a care task for a pet, and viewing an organized daily schedule. My
+initial UML uses four classes: `Task` stores the activity details, `Pet` keeps
+its own list of tasks, `Owner` manages multiple pets, and `Scheduler` retrieves
+and organizes tasks. I used dataclasses so the data-focused objects have simple,
+readable constructors while their behavior remains in clearly named methods.
 
 **b. Design changes**
 
-- Did your design change during implementation?
-- If yes, describe at least one change and why you made it.
+My first brainstorm had the `Scheduler` store its own list of tasks. During the
+AI review, I noticed that this would duplicate the lists already stored by each
+`Pet` and could become out of date. I changed the relationship so the
+`Scheduler` keeps an `Owner` reference and retrieves the current tasks through
+the owner's pets instead.
 
 ---
 
