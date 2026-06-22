@@ -6,6 +6,35 @@ from pawpal_system import Owner, Pet, Scheduler, Task
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 
+
+def find_task_pet(owner: Owner, task: Task) -> Pet | None:
+    """Return the pet that owns a task instance."""
+    for pet in owner.pets:
+        if any(saved_task is task for saved_task in pet.tasks):
+            return pet
+    return None
+
+
+def build_task_rows(owner: Owner, tasks: list[Task]) -> list[dict[str, str]]:
+    """Convert tasks into rows that are easy to read in Streamlit."""
+    rows = []
+    for task in tasks:
+        pet = find_task_pet(owner, task)
+        rows.append(
+            {
+                "Pet": pet.name if pet else "Unknown",
+                "Date": task.due_date.isoformat() if task.due_date else "Not set",
+                "Time": task.time,
+                "Task": task.title,
+                "Duration": f"{task.duration_minutes} min",
+                "Priority": task.priority.title(),
+                "Frequency": task.frequency.title(),
+                "Status": "Complete" if task.completed else "Open",
+            }
+        )
+    return rows
+
+
 st.title("🐾 PawPal+")
 
 st.markdown(
@@ -15,24 +44,23 @@ tasks below, then build a schedule from the saved information.
 """
 )
 
-with st.expander("Scenario", expanded=True):
+with st.expander("About PawPal+", expanded=False):
     st.markdown(
         """
 **PawPal+** is a pet care planning assistant. It helps a pet owner plan care tasks
 for their pet(s) based on constraints like time, priority, and preferences.
 
-You will design and implement the scheduling logic and connect it to this Streamlit UI.
+Tasks stay connected to each pet and are organized by the scheduling logic.
 """
     )
 
-with st.expander("What you need to build", expanded=True):
+with st.expander("Scheduling rules", expanded=False):
     st.markdown(
         """
-At minimum, your system should:
-- Represent pet care tasks (what needs to happen, how long it takes, priority)
-- Represent the pet and the owner (basic info and preferences)
-- Build a plan/schedule for a day that chooses and orders tasks based on constraints
-- Explain the plan (why each task was chosen and when it happens)
+- Tasks are ordered by their scheduled time.
+- Schedule results can be filtered by pet and completion status.
+- Exact date-and-time conflicts produce a warning.
+- Completing a daily or weekly task creates its next occurrence.
 """
     )
 
@@ -81,6 +109,7 @@ if owner.pets:
             "Duration (minutes)", min_value=1, max_value=240, value=20
         )
         priority = st.selectbox("Priority", ["low", "medium", "high"], index=2)
+        frequency = st.selectbox("Frequency", ["once", "daily", "weekly"])
 
     if st.button("Add task"):
         selected_pet = next(pet for pet in owner.pets if pet.name == selected_pet_name)
@@ -90,25 +119,42 @@ if owner.pets:
                 task_time.strftime("%H:%M"),
                 int(duration),
                 priority,
+                frequency,
                 due_date=date.today(),
             )
         )
         st.success(f"Added {task_title.strip() or 'Untitled task'} for {selected_pet.name}.")
 
-task_rows = [
-    {
-        "Pet": pet.name,
-        "Time": task.time,
-        "Task": task.title,
-        "Duration": f"{task.duration_minutes} min",
-        "Priority": task.priority,
-    }
-    for pet in owner.pets
-    for task in pet.tasks
-]
+scheduler = Scheduler(owner)
+open_tasks = scheduler.filter_tasks(completed=False)
+
+if open_tasks:
+    st.markdown("### Complete a Task")
+    selected_task_index = st.selectbox(
+        "Choose an open task",
+        range(len(open_tasks)),
+        format_func=lambda index: (
+            f"{find_task_pet(owner, open_tasks[index]).name}: "
+            f"{open_tasks[index].time} - {open_tasks[index].title}"
+        ),
+    )
+    task_to_complete = open_tasks[selected_task_index]
+    if st.button("Mark complete"):
+        task_pet = find_task_pet(owner, task_to_complete)
+        next_task = scheduler.mark_task_complete(task_pet.name, task_to_complete)
+        if next_task:
+            st.success(
+                f"Completed {task_to_complete.title}. The next occurrence is "
+                f"{next_task.due_date}."
+            )
+        else:
+            st.success(f"Completed {task_to_complete.title}.")
+
+all_tasks = scheduler.sort_by_time(scheduler.get_tasks())
+task_rows = build_task_rows(owner, all_tasks)
 
 if task_rows:
-    st.write("Current tasks:")
+    st.markdown("### Current Tasks")
     st.table(task_rows)
 else:
     st.info("No tasks yet. Add one above.")
@@ -116,13 +162,33 @@ else:
 st.divider()
 
 st.subheader("Build Schedule")
-st.caption("Build a schedule from the tasks stored by your PawPal+ classes.")
+st.caption("Filter the saved tasks, then create a chronological schedule.")
+
+filter_col1, filter_col2 = st.columns(2)
+with filter_col1:
+    pet_filter = st.selectbox("Filter by pet", ["All pets"] + [pet.name for pet in owner.pets])
+with filter_col2:
+    status_filter = st.selectbox("Filter by status", ["Incomplete", "Completed", "All tasks"])
 
 if st.button("Generate schedule"):
-    scheduler = Scheduler(owner)
-    scheduled_tasks = scheduler.get_tasks()
+    selected_pet = None if pet_filter == "All pets" else pet_filter
+    selected_status = {"Incomplete": False, "Completed": True, "All tasks": None}[
+        status_filter
+    ]
+    scheduled_tasks = scheduler.sort_by_time(
+        scheduler.filter_tasks(pet_name=selected_pet, completed=selected_status)
+    )
     if scheduled_tasks:
         st.success(f"Schedule created with {len(scheduled_tasks)} task(s).")
-        st.table(task_rows)
+        st.table(build_task_rows(owner, scheduled_tasks))
+
+        conflict_warnings = scheduler.detect_conflicts(
+            scheduler.filter_tasks(completed=False)
+        )
+        if conflict_warnings:
+            for warning in conflict_warnings:
+                st.warning(warning)
+        else:
+            st.info("No exact-time conflicts found.")
     else:
-        st.warning("Add at least one task before building a schedule.")
+        st.warning("No tasks match the selected filters.")

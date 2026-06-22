@@ -1,6 +1,7 @@
 # PawPal+ (Module 2 Project)
 
-You are building **PawPal+**, a Streamlit app that helps a pet owner plan care tasks for their pet.
+**PawPal+** is a Streamlit app that helps an owner plan and track care tasks for
+multiple pets.
 
 ## Scenario
 
@@ -12,35 +13,28 @@ A busy pet owner needs help staying consistent with pet care. They want an assis
 
 Your job is to design the system first (UML), then implement the logic in Python, then connect it to the Streamlit UI.
 
-## What you will build
+## Features
 
-Your final app should:
+- Add multiple pets and keep their tasks in Streamlit session state.
+- Record task time, duration, priority, and once/daily/weekly frequency.
+- Sort schedules chronologically and filter them by pet or completion status.
+- Warn when incomplete tasks share the same date and start time.
+- Complete tasks and automatically create the next daily or weekly occurrence.
+- Verify the backend independently through a CLI demo and automated tests.
 
-- Let a user enter basic owner + pet info
-- Let a user add/edit tasks (duration + priority at minimum)
-- Generate a daily schedule/plan based on constraints and priorities
-- Display the plan clearly (and ideally explain the reasoning)
-- Include tests for the most important scheduling behaviors
+The final architecture is documented in the
+[Mermaid class diagram](diagrams/uml_final.mmd).
 
-## Getting started
-
-### Setup
+## Setup
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+python -m streamlit run app.py
 ```
 
-### Suggested workflow
-
-1. Read the scenario carefully and identify requirements and edge cases.
-2. Draft a UML diagram (classes, attributes, methods, relationships).
-3. Convert UML into Python class stubs (no logic yet).
-4. Implement scheduling logic in small increments.
-5. Add tests to verify key behaviors.
-6. Connect your logic to the Streamlit UI in `app.py`.
-7. Refine UML so it matches what you actually built.
+Run `python main.py` for a terminal-only demonstration.
 
 ## 🖥️ Sample Output
 
@@ -60,10 +54,10 @@ Incomplete Tasks for Mochi
 - 18:00 Dinner
 
 Conflict Warnings
-- Conflict: Morning walk and Breakfast are both scheduled for 2026-06-21 at 08:00.
+- Conflict: Morning walk and Breakfast are both scheduled for 2026-06-22 at 08:00.
 
 Recurring Task
-- Completed Morning walk; next occurrence: 2026-06-22
+- Completed Morning walk; next occurrence: 2026-06-23
 ```
 
 ## 🧪 Testing PawPal+
@@ -86,7 +80,7 @@ collected 7 items
 
 tests\test_pawpal.py .......                                             [100%]
 
-============================== 7 passed in 0.10s ==============================
+============================== 7 passed in 0.20s ==============================
 ```
 
 **Confidence level:** 4/5 stars. The main scheduling behaviors are covered, but
@@ -103,12 +97,23 @@ future tests could check malformed time strings and partially overlapping tasks.
 
 ## 📸 Demo Walkthrough
 
-Describe your app in numbered steps so a reader can follow along without watching a video:
+1. Enter the owner's name, a pet name, and species, then select **Add pet**.
+2. Choose that pet and enter a task title, time, duration, priority, and frequency.
+3. Select **Add task** to save a real `Task` object under the selected `Pet`.
+4. Choose pet/status filters and select **Generate schedule** to see sorted rows
+   plus any exact-time conflict warnings.
+5. Select an open task and choose **Mark complete**. Daily and weekly tasks add
+   their next dated occurrence automatically.
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+The same scheduler behavior is visible without a browser:
 
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->
+```text
+Today's Schedule for Jordan (Sorted by Time)
+08:00 - Mochi: Morning walk (30 min) [priority: high]
+08:00 - Luna: Breakfast (10 min) [priority: high]
+12:00 - Luna: Medicine (5 min) [priority: high]
+18:00 - Mochi: Dinner (10 min) [priority: high]
+
+Conflict Warnings
+- Conflict: Morning walk and Breakfast are both scheduled for 2026-06-22 at 08:00.
+```

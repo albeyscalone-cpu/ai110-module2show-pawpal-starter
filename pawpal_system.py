@@ -1,4 +1,4 @@
-"""Core class skeletons for the PawPal+ pet care system."""
+"""Core domain classes and scheduling logic for PawPal+."""
 
 from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
@@ -87,7 +87,7 @@ class Scheduler:
     def detect_conflicts(self, tasks: list[Task]) -> list[str]:
         """Return warnings for tasks scheduled at the same time."""
         occupied_slots: dict[tuple[date | None, str], Task] = {}
-        warnings = []
+        warnings: list[str] = []
 
         for task in self.sort_by_time(tasks):
             if task.completed:
@@ -96,7 +96,9 @@ class Scheduler:
             slot = (task.due_date, task.time)
             if slot in occupied_slots:
                 first_task = occupied_slots[slot]
-                date_label = task.due_date.isoformat() if task.due_date else "the same day"
+                date_label = (
+                    task.due_date.isoformat() if task.due_date else "the same day"
+                )
                 warnings.append(
                     f"Conflict: {first_task.title} and {task.title} are both "
                     f"scheduled for {date_label} at {task.time}."

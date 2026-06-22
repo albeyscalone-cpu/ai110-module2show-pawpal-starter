@@ -25,8 +25,13 @@ the owner's pets instead.
 
 **a. Constraints and priorities**
 
-- What constraints does your scheduler consider (for example: time, priority, preferences)?
-- How did you decide which constraints mattered most?
+The scheduler uses task time for chronological ordering and can narrow a plan by
+pet or completion status. It also considers date and time together when looking
+for conflicts, and frequency determines whether completion creates a task one
+day or seven days later. Priority is stored and displayed so the owner can make
+decisions, but time is the main ordering rule because the project focuses on a
+daily schedule. I chose these constraints because they directly affect what an
+owner needs to do now and which pet needs the care.
 
 **b. Tradeoffs**
 
@@ -42,13 +47,22 @@ scheduling mistake, while interval overlap could be added in a later version.
 
 **a. How you used AI**
 
-- How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
-- What kinds of prompts or questions were most helpful?
+I used Codex to brainstorm the UML, turn the skeleton into small implementations,
+connect the classes to Streamlit, and draft focused tests. Multi-file editing was
+most useful when recurrence required coordinated changes to the Scheduler, CLI,
+and documentation. Concrete prompts about one method or phase were more useful
+than broad requests to build the entire app. Separate phase conversations kept
+the UML, implementation, UI, algorithms, and tests from becoming one oversized
+change and gave me a clear point to review and commit each step.
 
 **b. Judgment and verification**
 
-- Describe one moment where you did not accept an AI suggestion as-is.
-- How did you evaluate or verify what the AI suggested?
+I did not use a more complex suggestion to parse times into datetime objects and
+calculate every duration overlap. Since the UI always saves zero-padded `HH:MM`
+strings, a lambda string sort was easier to read and still produced the correct
+order. I kept exact-slot conflict detection rather than presenting partial
+overlaps as more accurate than they were. I verified the decision with the CLI,
+pytest cases for different dates and times, and a headless Streamlit workflow.
 
 ---
 
@@ -56,13 +70,20 @@ scheduling mistake, while interval overlap could be added in a later version.
 
 **a. What you tested**
 
-- What behaviors did you test?
-- Why were these tests important?
+The seven automated tests cover marking a task complete, adding a task to a pet,
+sorting out-of-order times, filtering by pet and status, daily recurrence,
+same-slot conflict warnings, and an owner with no tasks. Sorting, recurrence,
+and conflict detection are the scheduler's main algorithms, so regressions there
+would change a daily plan. The empty-owner test matters because a new user starts
+without pets or tasks and the app should not crash.
 
 **b. Confidence**
 
-- How confident are you that your scheduler works correctly?
-- What edge cases would you test next if you had more time?
+My confidence is 4 out of 5 because all seven tests, the CLI demo, and the
+headless UI workflow pass. I would next test malformed time strings, three tasks
+in one slot, and tasks whose durations overlap even though their start times are
+different. I would also test longer recurrence chains across month and year
+boundaries.
 
 ---
 
@@ -70,12 +91,19 @@ scheduling mistake, while interval overlap could be added in a later version.
 
 **a. What went well**
 
-- What part of this project are you most satisfied with?
+I am most satisfied that the same classes power the CLI, tests, and Streamlit UI.
+Keeping the logic out of `app.py` made each scheduling behavior easier to inspect
+and verify.
 
 **b. What you would improve**
 
-- If you had another iteration, what would you improve or redesign?
+I would add edit/delete actions, persistent storage beyond one browser session,
+and duration-based overlap detection. I would also validate task times inside
+the logic layer so callers besides Streamlit receive the same protection.
 
 **c. Key takeaway**
 
-- What is one important thing you learned about designing systems or working with AI on this project?
+My main takeaway is that being the lead architect means deciding boundaries and
+verification steps, not merely accepting generated code. AI made each phase
+faster, but the small commits, CLI output, and tests are what showed that the
+pieces actually fit together.
