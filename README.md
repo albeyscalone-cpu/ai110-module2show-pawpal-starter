@@ -68,19 +68,29 @@ Recurring Task
 
 ## 🧪 Testing PawPal+
 
+The automated suite covers task completion and addition, chronological sorting,
+pet/status filtering, daily recurrence, exact-time conflicts, and an owner with
+no tasks.
+
 ```bash
-# Run the full test suite:
-pytest
-
-# Run with coverage:
-pytest --cov
+python -m pytest
 ```
 
-Sample test output:
+```text
+$ python -m pytest -p no:cacheprovider
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-9.0.3, pluggy-1.6.0
+rootdir: C:\AIClass\ai110-module2show-pawpal-starter-main
+plugins: anyio-4.13.0
+collected 7 items
 
+tests\test_pawpal.py .......                                             [100%]
+
+============================== 7 passed in 0.10s ==============================
 ```
-# Paste your pytest output here
-```
+
+**Confidence level:** 4/5 stars. The main scheduling behaviors are covered, but
+future tests could check malformed time strings and partially overlapping tasks.
 
 ## 📐 Smarter Scheduling
 
