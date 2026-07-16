@@ -20,10 +20,10 @@ def main() -> None:
     luna = Pet("Luna", "cat")
 
     today = date.today()
-    dinner = Task("Dinner", "18:00", 10, "high", "daily", due_date=today)
+    dinner = Task("Dinner", "18:00", 10, "medium", "daily", due_date=today)
     morning_walk = Task("Morning walk", "08:00", 30, "high", "daily", due_date=today)
     medicine = Task("Medicine", "12:00", 5, "high", "daily", due_date=today)
-    breakfast = Task("Breakfast", "08:00", 10, "high", "daily", due_date=today)
+    breakfast = Task("Breakfast", "08:00", 10, "medium", "daily", due_date=today)
 
     # Add tasks out of order so the sorted output is easy to verify.
     mochi.add_task(dinner)
@@ -49,6 +49,11 @@ def main() -> None:
         scheduler.filter_tasks(pet_name="Mochi", completed=False)
     ):
         print(f"- {task.time} {task.title}")
+
+    print("\nPriority Plan (35 available minutes)")
+    for task in scheduler.build_daily_plan(35):
+        pet_name = find_pet_name(owner, task)
+        print(f"- {task.time} {pet_name}: {task.title} [{task.priority}]")
 
     print("\nConflict Warnings")
     for warning in scheduler.detect_conflicts(scheduler.get_tasks()):

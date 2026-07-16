@@ -1,10 +1,14 @@
 from datetime import date, time
+from pathlib import Path
 
 import streamlit as st
 
+from pawpal_storage import load_owner, save_owner
 from pawpal_system import Owner, Pet, Scheduler, Task
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
+
+DATA_FILE = Path("pawpal_data.json")
 
 
 def find_task_pet(owner: Owner, task: Task) -> Pet | None:
@@ -71,9 +75,32 @@ if "owner" not in st.session_state:
 
 owner = st.session_state.owner
 
+with st.sidebar:
+    st.header("Saved Data")
+    st.caption("Store pets and tasks between app runs.")
+    if st.button("Load data"):
+        if DATA_FILE.exists():
+            try:
+                owner = load_owner(DATA_FILE)
+                st.session_state.owner = owner
+                st.session_state.owner_name_input = owner.name
+                st.success("Loaded pawpal_data.json.")
+            except (OSError, ValueError, KeyError, TypeError) as error:
+                st.error(f"Could not load saved data: {error}")
+        else:
+            st.warning("No saved data file exists yet.")
+
 st.subheader("Owner and Pets")
-owner_name = st.text_input("Owner name", value=owner.name)
+owner_name = st.text_input("Owner name", value=owner.name, key="owner_name_input")
 owner.name = owner_name.strip() or "Pet owner"
+
+with st.sidebar:
+    if st.button("Save data"):
+        try:
+            save_owner(owner, DATA_FILE)
+            st.success("Saved pets and tasks to pawpal_data.json.")
+        except OSError as error:
+            st.error(f"Could not save data: {error}")
 
 pet_name = st.text_input("Pet name", value="Mochi")
 species = st.selectbox("Species", ["dog", "cat", "other"])
@@ -192,3 +219,19 @@ if st.button("Generate schedule"):
             st.info("No exact-time conflicts found.")
     else:
         st.warning("No tasks match the selected filters.")
+
+st.markdown("### Priority Plan")
+available_minutes = st.number_input(
+    "Available care time (minutes)", min_value=0, max_value=720, value=60
+)
+if st.button("Build priority plan"):
+    priority_plan = scheduler.build_daily_plan(int(available_minutes))
+    if priority_plan:
+        used_minutes = sum(task.duration_minutes for task in priority_plan)
+        st.success(
+            f"Selected {len(priority_plan)} task(s) using {used_minutes} of "
+            f"{int(available_minutes)} available minutes."
+        )
+        st.table(build_task_rows(owner, priority_plan))
+    else:
+        st.warning("No open tasks fit the available time.")

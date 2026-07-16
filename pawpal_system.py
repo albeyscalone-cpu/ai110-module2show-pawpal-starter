@@ -3,6 +3,8 @@
 from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
 
+PRIORITY_ORDER = {"high": 0, "medium": 1, "low": 2}
+
 
 @dataclass
 class Task:
@@ -69,6 +71,13 @@ class Scheduler:
         """Return tasks ordered by scheduled time."""
         return sorted(tasks, key=lambda task: task.time)
 
+    def sort_by_priority_and_time(self, tasks: list[Task]) -> list[Task]:
+        """Order tasks by priority first and scheduled time second."""
+        return sorted(
+            tasks,
+            key=lambda task: (PRIORITY_ORDER.get(task.priority.lower(), 3), task.time),
+        )
+
     def filter_tasks(
         self,
         pet_name: str | None = None,
@@ -132,3 +141,17 @@ class Scheduler:
         )
         pet.add_task(next_task)
         return next_task
+
+    def build_daily_plan(self, available_minutes: int) -> list[Task]:
+        """Choose the highest-priority open tasks that fit the time budget."""
+        if available_minutes < 0:
+            raise ValueError("Available minutes cannot be negative.")
+
+        plan = []
+        remaining_minutes = available_minutes
+        open_tasks = self.filter_tasks(completed=False)
+        for task in self.sort_by_priority_and_time(open_tasks):
+            if task.duration_minutes <= remaining_minutes:
+                plan.append(task)
+                remaining_minutes -= task.duration_minutes
+        return plan

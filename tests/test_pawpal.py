@@ -2,6 +2,7 @@
 
 from datetime import date, timedelta
 
+from pawpal_storage import load_owner, save_owner
 from pawpal_system import Owner, Pet, Scheduler, Task
 
 
@@ -91,3 +92,54 @@ def test_empty_scheduler_returns_empty_results():
     assert scheduler.sort_by_time([]) == []
     assert scheduler.filter_tasks() == []
     assert scheduler.detect_conflicts([]) == []
+
+
+def test_daily_plan_uses_priority_and_available_minutes_across_pets():
+    owner = Owner(
+        "Jordan",
+        [
+            Pet(
+                "Mochi",
+                "dog",
+                [
+                    Task("Morning walk", "08:00", 30, "high"),
+                    Task("Dinner", "18:00", 10, "medium"),
+                ],
+            ),
+            Pet(
+                "Luna",
+                "cat",
+                [
+                    Task("Medicine", "12:00", 5, "high"),
+                    Task("Breakfast", "09:00", 10, "medium"),
+                ],
+            ),
+        ],
+    )
+    scheduler = Scheduler(owner)
+
+    plan = scheduler.build_daily_plan(35)
+
+    assert [task.title for task in plan] == ["Morning walk", "Medicine"]
+    assert sum(task.duration_minutes for task in plan) == 35
+
+
+def test_json_save_and_load_preserves_owner_data(tmp_path):
+    due_date = date(2026, 6, 22)
+    owner = Owner(
+        "Jordan",
+        [
+            Pet(
+                "Mochi",
+                "dog",
+                [Task("Morning walk", "08:00", 30, "high", "daily", True, due_date)],
+            )
+        ],
+        {"quiet_hours": "21:00-07:00"},
+    )
+    data_file = tmp_path / "pawpal.json"
+
+    save_owner(owner, data_file)
+    loaded_owner = load_owner(data_file)
+
+    assert loaded_owner == owner

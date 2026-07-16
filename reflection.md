@@ -28,10 +28,11 @@ the owner's pets instead.
 The scheduler uses task time for chronological ordering and can narrow a plan by
 pet or completion status. It also considers date and time together when looking
 for conflicts, and frequency determines whether completion creates a task one
-day or seven days later. Priority is stored and displayed so the owner can make
-decisions, but time is the main ordering rule because the project focuses on a
-daily schedule. I chose these constraints because they directly affect what an
-owner needs to do now and which pet needs the care.
+day or seven days later. Priority now affects the daily planning algorithm:
+`build_daily_plan()` chooses high-priority tasks first, then uses time order as a
+tiebreaker while staying within the owner's available minutes. I chose these
+constraints because they directly affect what an owner needs to do now and which
+pet needs the care.
 
 **b. Tradeoffs**
 
@@ -40,6 +41,9 @@ does not calculate whether their durations overlap. This keeps the warning logic
 easy to understand and avoids pretending the app knows travel or transition
 time between different pet activities. Exact matches catch the clearest
 scheduling mistake, while interval overlap could be added in a later version.
+The priority plan is also greedy instead of mathematically optimal. That choice
+keeps the result explainable for this project: urgent care tasks are considered
+before lower-priority work.
 
 ---
 
@@ -49,15 +53,18 @@ scheduling mistake, while interval overlap could be added in a later version.
 
 I used Codex to brainstorm the UML, turn the skeleton into small implementations,
 connect the classes to Streamlit, and draft focused tests. Multi-file editing was
-most useful when recurrence required coordinated changes to the Scheduler, CLI,
-and documentation. Concrete prompts about one method or phase were more useful
-than broad requests to build the entire app. Separate phase conversations kept
-the UML, implementation, UI, algorithms, and tests from becoming one oversized
-change and gave me a clear point to review and commit each step.
+most useful when recurrence, persistence, and priority planning required
+coordinated changes to the Scheduler, CLI, UI, tests, and documentation. Concrete
+prompts about one method or phase were more useful than broad requests to build
+the entire app. Separate phase conversations kept the UML, implementation, UI,
+algorithms, and tests from becoming one oversized change and gave me a clear
+point to review and commit each step.
 
 **b. Judgment and verification**
 
-I did not use a more complex suggestion to parse times into datetime objects and
+I accepted the suggestion to move persistence into a separate `pawpal_storage.py`
+module because it keeps file input/output away from the scheduling classes. I did
+not use a more complex suggestion to parse times into datetime objects and
 calculate every duration overlap. Since the UI always saves zero-padded `HH:MM`
 strings, a lambda string sort was easier to read and still produced the correct
 order. I kept exact-slot conflict detection rather than presenting partial
@@ -70,20 +77,21 @@ pytest cases for different dates and times, and a headless Streamlit workflow.
 
 **a. What you tested**
 
-The seven automated tests cover marking a task complete, adding a task to a pet,
+The nine automated tests cover marking a task complete, adding a task to a pet,
 sorting out-of-order times, filtering by pet and status, daily recurrence,
-same-slot conflict warnings, and an owner with no tasks. Sorting, recurrence,
-and conflict detection are the scheduler's main algorithms, so regressions there
-would change a daily plan. The empty-owner test matters because a new user starts
-without pets or tasks and the app should not crash.
+same-slot conflict warnings, an owner with no tasks, priority planning within an
+available-time limit, and JSON save/load behavior. Sorting, recurrence, conflict
+detection, and priority planning are the scheduler's main algorithms, so
+regressions there would change a daily plan. The empty-owner test matters
+because a new user starts without pets or tasks and the app should not crash.
 
 **b. Confidence**
 
-My confidence is 4 out of 5 because all seven tests, the CLI demo, and the
-headless UI workflow pass. I would next test malformed time strings, three tasks
-in one slot, and tasks whose durations overlap even though their start times are
-different. I would also test longer recurrence chains across month and year
-boundaries.
+My confidence is 4 out of 5 because the test suite, the CLI demo, and the
+headless UI workflow cover the main use cases. I would next test malformed time
+strings, three tasks in one slot, corrupted JSON files, and tasks whose durations
+overlap even though their start times are different. I would also test longer
+recurrence chains across month and year boundaries.
 
 ---
 
@@ -97,9 +105,9 @@ and verify.
 
 **b. What you would improve**
 
-I would add edit/delete actions, persistent storage beyond one browser session,
-and duration-based overlap detection. I would also validate task times inside
-the logic layer so callers besides Streamlit receive the same protection.
+I would add edit/delete actions, duration-based overlap detection, and stronger
+validation for imported JSON data. I would also validate task times inside the
+logic layer so callers besides Streamlit receive the same protection.
 
 **c. Key takeaway**
 
